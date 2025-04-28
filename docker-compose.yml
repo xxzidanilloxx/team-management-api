@@ -1,0 +1,18 @@
+version: "3"
+services:
+  db:
+    image: postgres:12
+    container_name: team-management-api
+    environment:
+      POSTGRES_USER: danillo
+      POSTGRES_PASSWORD: danillo
+      POSTGRES_DB: team-management-api
+      PGDATA: /data/postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+
+volumes:
+  postgresql_data:
+    driver: local
