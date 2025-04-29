@@ -45,4 +45,8 @@ public class Student {
 
     @Column(name = "student_status")
     private boolean status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 }

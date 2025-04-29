@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -27,4 +30,7 @@ public class Partner {
 
     @Column(name = "partner_location", nullable = false)
     private String location;
+
+    @OneToMany(mappedBy = "partner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    List<Project> projects = new ArrayList<>();
 }
