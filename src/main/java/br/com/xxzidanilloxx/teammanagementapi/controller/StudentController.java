@@ -2,6 +2,7 @@ package br.com.xxzidanilloxx.teammanagementapi.controller;
 
 import br.com.xxzidanilloxx.teammanagementapi.dto.StudentRequestDTO;
 import br.com.xxzidanilloxx.teammanagementapi.dto.StudentResponseDTO;
+import br.com.xxzidanilloxx.teammanagementapi.exception.InvalidPaginationParametersException;
 import br.com.xxzidanilloxx.teammanagementapi.service.StudentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -112,7 +113,7 @@ public class StudentController {
 
     private void validatePaginationParams(int page, int size) {
         if (page < 0 || size <= 0 || size > 100) {
-            throw new IllegalArgumentException();
+            throw new InvalidPaginationParametersException(page, size);
         }
     }
 }

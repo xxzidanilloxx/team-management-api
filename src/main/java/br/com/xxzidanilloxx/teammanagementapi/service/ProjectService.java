@@ -4,6 +4,8 @@ import br.com.xxzidanilloxx.teammanagementapi.dto.ProjectRequestDTO;
 import br.com.xxzidanilloxx.teammanagementapi.dto.ProjectResponseDTO;
 import br.com.xxzidanilloxx.teammanagementapi.entity.Partner;
 import br.com.xxzidanilloxx.teammanagementapi.entity.Project;
+import br.com.xxzidanilloxx.teammanagementapi.exception.ResourceAlreadyExistsException;
+import br.com.xxzidanilloxx.teammanagementapi.exception.ResourceNotFoundException;
 import br.com.xxzidanilloxx.teammanagementapi.mapper.ProjectMapper;
 import br.com.xxzidanilloxx.teammanagementapi.repository.PartnerRepository;
 import br.com.xxzidanilloxx.teammanagementapi.repository.ProjectRepository;
@@ -12,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +26,7 @@ public class ProjectService {
     @Transactional
     public ProjectResponseDTO createProject(ProjectRequestDTO data) {
         Partner partner = partnerRepository.findById(data.partnerId())
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Partner.class, data.partnerId()));
         duplicateProjectName(data.name());
         Project project = Project.toEntity(partner, data);
         Project result = projectRepository.save(project);
@@ -41,7 +42,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public ProjectResponseDTO getProjectById(Long id) {
         Project result = projectRepository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Partner.class, id));
         return projectMapper.toDto(result);
     }
 
@@ -50,7 +51,7 @@ public class ProjectService {
         List<Project> projects = projectRepository.searchByName(name);
 
         if(projects.isEmpty()) {
-            throw new NoSuchElementException();
+            throw new ResourceNotFoundException("name", name);
         }
 
         return projects.stream().map(projectMapper::toDto).toList();
@@ -59,10 +60,10 @@ public class ProjectService {
     @Transactional
     public ProjectResponseDTO updateProject(Long id, ProjectRequestDTO data) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Project.class, id));
 
         Partner partner = partnerRepository.findById(data.partnerId())
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Partner.class, data.partnerId()));
 
         duplicateProjectNameForUpdate(data.name(), id);
         project.setPartner(partner);
@@ -76,7 +77,7 @@ public class ProjectService {
     @Transactional
     public void deleteProject(Long id) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Project.class, id));
         projectRepository.delete(project);
     }
 
@@ -84,14 +85,14 @@ public class ProjectService {
         boolean projectExists = projectRepository.existsByName(name);
 
         if (projectExists) {
-            throw new IllegalArgumentException();
+            throw new ResourceAlreadyExistsException(Project.class, name);
         }
     }
 
     private void duplicateProjectNameForUpdate(String name, Long id) {
         boolean projectExists = projectRepository.existsByNameAndIdNot(name, id);
         if (projectExists) {
-            throw new IllegalArgumentException();
+            throw new ResourceAlreadyExistsException(Project.class, name);
         }
     }
 }

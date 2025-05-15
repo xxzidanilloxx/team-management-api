@@ -3,6 +3,8 @@ package br.com.xxzidanilloxx.teammanagementapi.service;
 import br.com.xxzidanilloxx.teammanagementapi.dto.PartnerRequestDTO;
 import br.com.xxzidanilloxx.teammanagementapi.dto.PartnerResponseDTO;
 import br.com.xxzidanilloxx.teammanagementapi.entity.Partner;
+import br.com.xxzidanilloxx.teammanagementapi.exception.ResourceAlreadyExistsException;
+import br.com.xxzidanilloxx.teammanagementapi.exception.ResourceNotFoundException;
 import br.com.xxzidanilloxx.teammanagementapi.mapper.PartnerMapper;
 import br.com.xxzidanilloxx.teammanagementapi.repository.PartnerRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +37,7 @@ public class PartnerService {
     @Transactional(readOnly = true)
     public PartnerResponseDTO getPartnerById(Long id) {
         Partner result = partnerRepository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Partner.class, id));
         return partnerMapper.toDto(result);
     }
 
@@ -45,7 +46,7 @@ public class PartnerService {
         List<Partner> partners = partnerRepository.searchByName(name);
 
         if(partners.isEmpty()) {
-            throw new NoSuchElementException();
+            throw new ResourceNotFoundException("name", name);
         }
 
         return partners.stream().map(partnerMapper::toDto).toList();
@@ -54,7 +55,7 @@ public class PartnerService {
     @Transactional
     public PartnerResponseDTO updatePartner(Long id, PartnerRequestDTO data) {
         Partner partner = partnerRepository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Partner.class, id));
         duplicatePartnerNameForUpdate(data.name(), id);
         partner.setName(data.name());
         partner.setEmail(data.email());
@@ -66,7 +67,7 @@ public class PartnerService {
     @Transactional
     public void deletePartner(Long id) {
         Partner result = partnerRepository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Partner.class, id));
         partnerRepository.delete(result);
     }
 
@@ -74,14 +75,14 @@ public class PartnerService {
         boolean partnerExists = partnerRepository.existsByName(name);
 
         if (partnerExists) {
-            throw new IllegalArgumentException();
+            throw new ResourceAlreadyExistsException("name", name);
         }
     }
 
     private void duplicatePartnerNameForUpdate(String name, Long id) {
         boolean partnerExists = partnerRepository.existsByNameAndIdNot(name, id);
         if (partnerExists) {
-            throw new IllegalArgumentException();
+            throw new ResourceAlreadyExistsException("name", name);
         }
     }
 }

@@ -7,6 +7,10 @@ import br.com.xxzidanilloxx.teammanagementapi.entity.Membership;
 import br.com.xxzidanilloxx.teammanagementapi.entity.Student;
 import br.com.xxzidanilloxx.teammanagementapi.entity.Team;
 import br.com.xxzidanilloxx.teammanagementapi.enumeration.Role;
+import br.com.xxzidanilloxx.teammanagementapi.exception.DuplicateRoleException;
+import br.com.xxzidanilloxx.teammanagementapi.exception.ResourceNotFoundException;
+import br.com.xxzidanilloxx.teammanagementapi.exception.StudentAlreadyAssignedToTeamException;
+import br.com.xxzidanilloxx.teammanagementapi.exception.TeamCourseMismatchException;
 import br.com.xxzidanilloxx.teammanagementapi.mapper.MembershipMapper;
 import br.com.xxzidanilloxx.teammanagementapi.repository.CourseRepository;
 import br.com.xxzidanilloxx.teammanagementapi.repository.MembershipRepository;
@@ -17,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -32,13 +35,13 @@ public class MembershipService {
     @Transactional
     public MembershipResponseDTO addMemberToTeam(MembershipRequestDTO data){
         Course course = courseRepository.findById(data.courseId())
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Course.class, data.courseId()));
 
         Student student = studentRepository.findById(data.studentId())
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Student.class, data.studentId()));
 
         Team team = teamRepository.findById(data.teamId())
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Team.class, data.teamId()));
 
         checkUserAlreadyInTeam(data.studentId());
         checkCourseConsistency(data.teamId(), data.courseId());
@@ -58,7 +61,7 @@ public class MembershipService {
     @Transactional
     public void updateMemberRole(Long courseId, Long studentId, Long teamId, MembershipRequestDTO data){
         Membership membership = membershipRepository.findByCourseIdAndStudentIdAndTeamId(courseId, studentId, teamId)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(courseId, studentId, teamId));
         checkUniqueRoles(data.teamId(), data.role());
         membership.setRole(data.role());
         membershipRepository.save(membership);
@@ -67,7 +70,7 @@ public class MembershipService {
     @Transactional
     public void removeMemberFromTeam(Long studentId, Long teamId){
         Membership membership = membershipRepository.findByStudentIdAndTeamId(studentId, teamId)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(studentId, teamId));
 
         membershipRepository.delete(membership);
     }
@@ -75,13 +78,13 @@ public class MembershipService {
     @Transactional
     public void removeAllMembersFromTeam(Long teamId){
         teamRepository.findById(teamId)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Team.class, teamId));
         membershipRepository.deleteByTeamId(teamId);
     }
 
     private void checkUserAlreadyInTeam(Long studentId){
         if(membershipRepository.existsByStudentId(studentId)){
-            throw new IllegalStateException();
+            throw new StudentAlreadyAssignedToTeamException(studentId);
         }
     }
 
@@ -92,7 +95,7 @@ public class MembershipService {
                     .allMatch(member -> member.getCourse().getId().equals(courseId));
 
             if (!allSameCourse) {
-                throw new IllegalArgumentException();
+                throw new TeamCourseMismatchException();
             }
         }
     }
@@ -101,7 +104,7 @@ public class MembershipService {
         if (role == Role.SCRUM_MASTER || role == Role.PRODUCT_OWNER) {
             boolean roleExists = membershipRepository.existsByTeamIdAndRole(teamId, role);
             if (roleExists) {
-                throw new IllegalArgumentException();
+                throw new DuplicateRoleException();
             }
         }
     }

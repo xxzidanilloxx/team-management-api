@@ -5,6 +5,8 @@ import br.com.xxzidanilloxx.teammanagementapi.dto.StudentResponseDTO;
 import br.com.xxzidanilloxx.teammanagementapi.entity.Course;
 import br.com.xxzidanilloxx.teammanagementapi.entity.Student;
 import br.com.xxzidanilloxx.teammanagementapi.enumeration.Gender;
+import br.com.xxzidanilloxx.teammanagementapi.exception.ResourceAlreadyExistsException;
+import br.com.xxzidanilloxx.teammanagementapi.exception.ResourceNotFoundException;
 import br.com.xxzidanilloxx.teammanagementapi.mapper.StudentMapper;
 import br.com.xxzidanilloxx.teammanagementapi.repository.CourseRepository;
 import br.com.xxzidanilloxx.teammanagementapi.repository.StudentRepository;
@@ -17,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -34,7 +35,7 @@ public class StudentService {
         validateUniqueFields(data.cpf(), data.email());
 
         Course course = courseRepository.findById(data.courseId())
-                    .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Course.class, data.courseId()));
 
         Student student = Student.toEntity(course, data);
         Student result = studentRepository.save(student);
@@ -51,7 +52,7 @@ public class StudentService {
     @Transactional(readOnly = true)
     public StudentResponseDTO getStudentById(Long id) {
             Student student = studentRepository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+                    .orElseThrow(() -> new ResourceNotFoundException(Student.class, id));
         return studentMapper.toDto(student);
     }
 
@@ -60,7 +61,7 @@ public class StudentService {
         List<Student> students = studentRepository.searchByName(name);
 
         if(students.isEmpty()) {
-            throw new NoSuchElementException();
+            throw new ResourceNotFoundException("name", name);
         }
 
         return students.stream().map(studentMapper::toDto).toList();
@@ -69,14 +70,14 @@ public class StudentService {
     @Transactional(readOnly = true)
     public StudentResponseDTO getStudentByCpf(String cpf) {
         Student student = studentRepository.findByCpf(cpf)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("cpf", cpf));
         return studentMapper.toDto(student);
     }
 
     @Transactional(readOnly = true)
     public StudentResponseDTO getStudentByEmail(String email) {
         Student student = studentRepository.findByEmail(email)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException("email", email));
         return studentMapper.toDto(student);
     }
 
@@ -86,7 +87,7 @@ public class StudentService {
         List<Student> students = studentRepository.findByGender(result);
 
         if (students.isEmpty()) {
-            throw new NoSuchElementException();
+            throw new ResourceNotFoundException("gender", gender);
         }
 
         return students.stream().map(studentMapper::toDto).toList();
@@ -99,7 +100,7 @@ public class StudentService {
         List<Student> students = studentRepository.findByStatus(result);
 
         if(students.isEmpty()) {
-            throw new NoSuchElementException();
+            throw new ResourceNotFoundException("status", status);
         }
 
         return students.stream().map(studentMapper::toDto).toList();
@@ -108,14 +109,14 @@ public class StudentService {
     @Transactional
     public StudentResponseDTO updateStudent(Long id, StudentRequestDTO data) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Student.class, id));
 
         if (!data.cpf().equals(student.getCpf()) || !data.email().equals(student.getEmail())) {
             validateUniqueFields(data.cpf(), data.email());
         }
 
         Course course = courseRepository.findById(data.courseId())
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Course.class, data.courseId()));
 
         student.setFirstName(data.firstName());
         student.setLastName(data.lastName());
@@ -134,7 +135,7 @@ public class StudentService {
     @Transactional
     public void deactivateStudent(Long studentId) {
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Student.class, studentId));
         student.setStatus(false);
         studentRepository.save(student);
     }
@@ -142,7 +143,7 @@ public class StudentService {
     @Transactional
     public void activateStudent(Long studentId) {
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Student.class, studentId));
         student.setStatus(true);
         studentRepository.save(student);
     }
@@ -150,7 +151,7 @@ public class StudentService {
     @Transactional
     public StudentResponseDTO updateStudentFields(Long id, StudentRequestDTO data) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Student.class, id));
 
         if (!data.cpf().equals(student.getCpf()) || !data.email().equals(student.getEmail())) {
             validateUniqueFields(data.cpf(), data.email());
@@ -165,7 +166,7 @@ public class StudentService {
     @Transactional
     public void deleteStudent(Long id) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(() -> new ResourceNotFoundException(Student.class, id));
 
         studentRepository.delete(student);
     }
@@ -175,11 +176,11 @@ public class StudentService {
         boolean emailExists = studentRepository.existsByEmail(email);
 
         if (cpfExists && emailExists) {
-            throw new IllegalArgumentException();
+            throw new ResourceAlreadyExistsException("cpf", cpf, "email", email);
         } else if (cpfExists) {
-            throw new IllegalArgumentException();
+            throw new ResourceAlreadyExistsException("cpf", cpf);
         } else if (emailExists) {
-            throw new IllegalArgumentException();
+            throw new ResourceAlreadyExistsException("email", email);
         }
     }
 
@@ -203,7 +204,7 @@ public class StudentService {
 
         if (data.courseId() != null) {
             Course course = courseRepository.findById(data.courseId())
-                    .orElseThrow(NoSuchElementException::new);
+                    .orElseThrow(() -> new ResourceNotFoundException(Course.class, data.courseId()));
             student.setCourse(course);
         }
     }
@@ -214,7 +215,7 @@ public class StudentService {
         } else if ("false".equalsIgnoreCase(status)) {
             return false;
         } else {
-            throw new IllegalArgumentException();
+            throw new ResourceNotFoundException("status", status);
         }
     }
 }
