@@ -1,5 +1,6 @@
 package br.com.xxzidanilloxx.teammanagementapi.entity;
 
+import br.com.xxzidanilloxx.teammanagementapi.dto.TeamRequestDTO;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -31,4 +32,10 @@ public class Team {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", unique = true)
     private Project project;
+
+    public static Team toEntity(TeamRequestDTO data){
+        Team team = new Team();
+        team.setName(data.name());
+        return team;
+    }
 }

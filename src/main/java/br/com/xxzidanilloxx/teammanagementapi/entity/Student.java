@@ -1,5 +1,6 @@
 package br.com.xxzidanilloxx.teammanagementapi.entity;
 
+import br.com.xxzidanilloxx.teammanagementapi.dto.StudentRequestDTO;
 import br.com.xxzidanilloxx.teammanagementapi.enumeration.Gender;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -49,4 +50,18 @@ public class Student {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
+
+    public static Student toEntity(Course course, StudentRequestDTO data) {
+        Student student = new Student();
+        student.setFirstName(data.firstName());
+        student.setLastName(data.lastName());
+        student.setCpf(data.cpf());
+        student.setEmail(data.email());
+        student.setBirthDate(data.birthDate());
+        student.setGender(data.gender());
+        student.setCourse(course);
+        student.setRa(data.ra());
+        student.setStatus(data.status());
+        return student;
+    }
 }

@@ -1,5 +1,6 @@
 package br.com.xxzidanilloxx.teammanagementapi.entity;
 
+import br.com.xxzidanilloxx.teammanagementapi.dto.MembershipRequestDTO;
 import br.com.xxzidanilloxx.teammanagementapi.enumeration.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -35,4 +36,13 @@ public class Membership {
     @Enumerated(EnumType.STRING)
     @Column(name = "membership_role", nullable = false)
     private Role role;
+
+    public static Membership toEntity(Course course, Student student, Team team, MembershipRequestDTO data){
+        Membership membership = new Membership();
+        membership.setCourse(course);
+        membership.setStudent(student);
+        membership.setTeam(team);
+        membership.setRole(data.role());
+        return membership;
+    }
 }

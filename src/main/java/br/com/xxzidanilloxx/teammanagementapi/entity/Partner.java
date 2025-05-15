@@ -1,5 +1,6 @@
 package br.com.xxzidanilloxx.teammanagementapi.entity;
 
+import br.com.xxzidanilloxx.teammanagementapi.dto.PartnerRequestDTO;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -33,4 +34,12 @@ public class Partner {
 
     @OneToMany(mappedBy = "partner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<Project> projects = new ArrayList<>();
+
+    public static Partner toEntity(PartnerRequestDTO data) {
+        Partner partner = new Partner();
+        partner.setName(partner.getName());
+        partner.setEmail(partner.getEmail());
+        partner.setLocation(partner.getLocation());
+        return partner;
+    }
 }

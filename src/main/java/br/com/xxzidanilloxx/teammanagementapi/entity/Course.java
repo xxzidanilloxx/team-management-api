@@ -1,5 +1,6 @@
 package br.com.xxzidanilloxx.teammanagementapi.entity;
 
+import br.com.xxzidanilloxx.teammanagementapi.dto.CourseRequestDTO;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -30,4 +31,11 @@ public class Course {
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Student> students = new ArrayList<>();
+
+    public static Course toEntity(CourseRequestDTO data){
+        Course course = new Course();
+        course.setName(data.name());
+        course.setAlias(data.alias());
+        return course;
+    }
 }
